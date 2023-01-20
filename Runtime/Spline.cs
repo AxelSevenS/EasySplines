@@ -104,7 +104,7 @@ namespace EasySplines {
             for (int ring = 0; ring < ringCount; ring++){
 
                 float t = ring / (ringCount-1f);
-                OrientedPoint op = segment.GetPoint( segment.GetUniformT(t) );
+                OrientedPoint op = transform.InverseTransform(segment.GetPoint( segment.GetUniformT(t) ));
 
                 for (int j = 0; j < mesh2D.vertexCount; j++){
                     vertices.Add(op.position + (op.rotation * mesh2D.vertices[j].point)*scale);

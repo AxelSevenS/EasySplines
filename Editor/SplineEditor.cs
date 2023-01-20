@@ -10,7 +10,6 @@ namespace EasySplines.Editor {
     public class SplineEditor : UnityEditor.Editor{
 
         private Spline targetSpline;
-
         private SerializedObject so;
         private SerializedProperty propSegmentType;
 
@@ -32,6 +31,7 @@ namespace EasySplines.Editor {
         private SerializedProperty propScale;
 
         private int selectedSegment = 0;
+        private Vector3 oldPosition;
 
 
 
@@ -165,14 +165,11 @@ namespace EasySplines.Editor {
                 Gizmos.DrawLine(pointAlongTessel.position + (pointAlongTessel.rotation * scr.mesh2D.vertices[scr.mesh2D.vertices.Length-1].point)*scr.scale, pointAlongTessel.position + (pointAlongTessel.rotation * scr.mesh2D.vertices[0].point)*scr.scale);
                 
             }
-            if ( scr.transform.hasChanged ){
-
-                scr.transform.hasChanged = false; 
-                scr.UpdateOtherSegments();
-            }
         }
 
         public void OnSceneGUI(){
+
+            Spline targetSpline = (Spline)target;
 
             ControlPoint controlPoint1 = targetSpline.segment.controlPoint1;
             Vector3 tangent1 = targetSpline.GetTangent(0f);
@@ -217,6 +214,16 @@ namespace EasySplines.Editor {
                     targetSpline.UpdateOtherSegments();
                 }
 
+            }
+
+            if ( targetSpline.transform.hasChanged ){
+                targetSpline.transform.hasChanged = false; 
+
+                Vector3 movement = targetSpline.transform.position - oldPosition;
+                oldPosition = targetSpline.transform.position;
+                
+                targetSpline.segment.Move( movement );
+                targetSpline.UpdateOtherSegments();
             }
 
         }
@@ -301,6 +308,8 @@ namespace EasySplines.Editor {
             propMesh2D = so.FindProperty( "mesh2D" );
             propCount = so.FindProperty( "ringCount" );
             propScale = so.FindProperty( "scale" );
+
+            oldPosition = targetSpline.transform.position;
         }
 
         private void OnDisable(){
