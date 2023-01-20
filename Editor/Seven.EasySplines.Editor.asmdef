@@ -1,0 +1,16 @@
+{
+    "name": "Seven.EasySplines.Editor",
+    "rootNamespace": "",
+    "references": [
+        "GUID:2501c672303cd9d46825d506e23d5b11"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

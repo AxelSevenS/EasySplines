@@ -1,0 +1,12 @@
+{
+    "name": "com.seven.easysplines",
+    "version": "0.0.1",
+    "displayName": "Easy Splines",
+    "description": "Spline System with Custom Editor",
+    "unity": "2021.3",
+    "unityRelease": "6f1",
+    "author": {
+      "name": "Seven",
+      "email": "axelsevenet@gmail.com"
+    }
+}
