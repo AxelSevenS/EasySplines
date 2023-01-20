@@ -8,5 +8,8 @@
     "author": {
       "name": "Seven",
       "email": "axelsevenet@gmail.com"
+    },
+    "dependencies": {
+        "com.seven.utility" : "0.0.1"
     }
 }
