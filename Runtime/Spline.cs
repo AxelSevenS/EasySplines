@@ -159,7 +159,7 @@ namespace EasySplines {
             UpdatePreviousSegment();
         }
 
-        private void UpdateNextSegment() {
+        public void UpdateNextSegment() {
             if (nextSpline == null) return;
             
             Segment thisSegment = this.segment;
@@ -173,7 +173,7 @@ namespace EasySplines {
 
         }
 
-        private void UpdatePreviousSegment() {
+        public void UpdatePreviousSegment() {
             if (previousSpline == null) return;
 
             Segment thisSegment = this.segment;

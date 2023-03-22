@@ -7,7 +7,9 @@ namespace EasySplines.Editor {
 
     [CanEditMultipleObjects]
     [CustomEditor(typeof(Spline))]
-    public class SplineEditor : UnityEditor.Editor{
+    public class SplineEditor : UnityEditor.Editor {
+
+        private static Dictionary<Spline, Vector3> oldPositions = new Dictionary<Spline, Vector3>();
 
         private Spline targetSpline;
         private SerializedObject so;
@@ -31,7 +33,6 @@ namespace EasySplines.Editor {
         private SerializedProperty propScale;
 
         private int selectedSegment = 0;
-        private Vector3 oldPosition;
 
 
 
@@ -52,10 +53,13 @@ namespace EasySplines.Editor {
 
 
         private void OnUndoRedo(){
-            targetSpline.UpdateOtherSegments();
+            targetSpline.UpdateMesh();
         }
         
         public override void OnInspectorGUI(){
+
+            Spline targetSpline = (Spline)target;
+
 
 		    EditorGUI.BeginChangeCheck();
 
@@ -65,43 +69,52 @@ namespace EasySplines.Editor {
                 targetSpline.segmentType = (Spline.SegmentType)propSegmentType.enumValueIndex;
 
                 Undo.RecordObject(targetSpline, "Change Segment Type");
-                targetSpline.UpdateOtherSegments();
+                targetSpline.UpdateMesh();
             }
 
 		    EditorGUI.BeginChangeCheck();
 
             EditorGUILayout.PropertyField( propSegment, new GUIContent("Segment") );
 
-            GUILayout.Space( 15 );
+            // Don't display if multiple objects are selected
+            if (targets.Length == 1) {
 
-            GUILayout.Label( "Spline Segments", EditorStyles.boldLabel );
-            using ( new GUILayout.HorizontalScope( EditorStyles.helpBox ) ){
-                EditorGUIUtility.labelWidth = 150;
-                using ( new GUILayout.VerticalScope( EditorStyles.label ) ){
-                    GUILayout.Label( "Previous Segment", EditorStyles.boldLabel );
-                    EditorGUILayout.PropertyField( propPrevSegment, GUIContent.none );
+                GUILayout.Space( 15 );
 
-                    GUILayout.Space( 5 );
+                GUILayout.Label( "Spline Segments", EditorStyles.boldLabel );
+                using ( new GUILayout.HorizontalScope( EditorStyles.helpBox ) ){
+                    EditorGUIUtility.labelWidth = 150;
+                    using ( new GUILayout.VerticalScope( EditorStyles.label ) ){
+                        GUILayout.Label( "Previous Segment", EditorStyles.boldLabel );
+                        EditorGUILayout.PropertyField( propPrevSegment, GUIContent.none );
 
-                    if (targetSpline.previousSpline == null){
-                        if (GUILayout.Button( "Add Previous Segment" )) targetSpline.AddPrev();
-                    }else{
-                        if (GUILayout.Button( "Remove Previous Segment" )) targetSpline.RemovePrev();
+                        GUILayout.Space( 5 );
+
+                        if (targetSpline.previousSpline == null){
+                            if (GUILayout.Button( "Add Previous Segment" )) targetSpline.AddPrev();
+                        }else{
+                            if (GUILayout.Button( "Remove Previous Segment" )) targetSpline.RemovePrev();
+                            if (GUILayout.Button( "Link Previous Segment" )) targetSpline.UpdatePreviousSegment();
+                        }
+                    }
+                    using ( new GUILayout.VerticalScope( EditorStyles.label ) ){
+                        GUILayout.Label( "Next Segment", EditorStyles.boldLabel );
+                        EditorGUILayout.PropertyField( propNextSegment, GUIContent.none );
+
+                        GUILayout.Space( 5 );
+
+                        if (targetSpline.nextSpline == null){
+                            if (GUILayout.Button( "Add Next Segment" )) targetSpline.AddNext();
+                        }else {
+                            if (GUILayout.Button( "Remove Next Segment" )) targetSpline.RemoveNext();
+                            if (GUILayout.Button( "Link Next Segment" )) targetSpline.UpdateNextSegment();
+                        }
                     }
                 }
-                using ( new GUILayout.VerticalScope( EditorStyles.label ) ){
-                    GUILayout.Label( "Next Segment", EditorStyles.boldLabel );
-                    EditorGUILayout.PropertyField( propNextSegment, GUIContent.none );
 
-                    GUILayout.Space( 5 );
-
-                    if (targetSpline.nextSpline == null){
-                        if (GUILayout.Button( "Add Next Segment" )) targetSpline.AddNext();
-                    }else {
-                        if (GUILayout.Button( "Remove Next Segment" )) targetSpline.RemoveNext();
-                    }
-                }
             }
+
+            
             
             GUILayout.Space( 15 );
             
@@ -126,12 +139,88 @@ namespace EasySplines.Editor {
             if ( EditorGUI.EndChangeCheck() ){
 
                 Undo.RecordObject( target, "Edited Spline Values" ); 
-
                 so.ApplyModifiedProperties();
 
-                targetSpline.UpdateOtherSegments();
+                targetSpline.UpdateMesh();
 
             }
+        }
+
+        public void OnSceneGUI(){
+
+            Spline targetSpline = (Spline)target;
+
+            ControlPoint controlPoint1 = targetSpline.segment.controlPoint1;
+            Vector3 tangent1 = targetSpline.GetTangent(0f);
+            if ( DrawControlPointGUI( ref controlPoint1, tangent1, 0.25f, Color.red, targetSpline.GetInstanceID() ) ) {
+                Undo.RecordObject(targetSpline, "Edited Spline");
+                targetSpline.segment.controlPoint1.Set(controlPoint1);
+                targetSpline.UpdateMesh();
+            }
+
+            ControlPoint controlPoint2 = targetSpline.segment.controlPoint2;
+            Vector3 tangent2 = targetSpline.GetTangent(1f);
+            if ( DrawControlPointGUI( ref controlPoint2, tangent2, 0.25f, Color.red, targetSpline.GetInstanceID() + 1 ) ) {
+                Undo.RecordObject(targetSpline, "Edited Spline");
+                targetSpline.segment.controlPoint2.Set(controlPoint2);
+                targetSpline.UpdateMesh();
+            }
+
+            // Vector3 centerPosition = (controlPoint1.position + controlPoint2.position) / 2f;
+
+            if (targetSpline.segment is BezierCubic bezierCubic) {
+
+                Vector3 handle1 = bezierCubic.handle1;
+                if ( DrawHandleGUI( ref handle1, 0.2f, Color.blue, targetSpline.GetInstanceID() + 2 ) ) {
+                    Undo.RecordObject(targetSpline, "Edited Cubic Spline");
+                    bezierCubic.handle1 = handle1;
+                    targetSpline.UpdateMesh();
+                }
+
+                Vector3 handle2 = bezierCubic.handle2;
+                if ( DrawHandleGUI( ref handle2, 0.2f, Color.blue, targetSpline.GetInstanceID() + 3 ) ) {
+                    Undo.RecordObject(targetSpline, "Edited Cubic Spline");
+                    bezierCubic.handle2 = handle2;
+                    targetSpline.UpdateMesh();
+                }
+
+                // centerPosition = (centerPosition + handle1 + handle2) / 3f;
+
+            }
+
+            if (targetSpline.segment is BezierQuadratic bezierQuadratic) {
+
+                Vector3 handle = bezierQuadratic.handle;
+                if ( DrawHandleGUI( ref handle, 0.2f, Color.blue, targetSpline.GetInstanceID() + 4 ) ) {
+                    Undo.RecordObject(targetSpline, "Edited Quadratic Spline");
+                    bezierQuadratic.handle = handle;
+                    targetSpline.UpdateMesh();
+                }
+
+                // centerPosition = (centerPosition + handle) / 2f;
+
+            }
+            
+            // EditorGUI.BeginChangeCheck();
+
+            // Vector3 newCenterPosition = Handles.PositionHandle(centerPosition, Quaternion.identity);
+
+            // if (EditorGUI.EndChangeCheck()) {
+            //     Undo.RecordObject(targetSpline, "Edited Spline");
+            //     targetSpline.segment.Move( newCenterPosition - centerPosition );
+            //     targetSpline.UpdateMesh();
+            // }
+
+            if ( targetSpline.transform.hasChanged ){
+                targetSpline.transform.hasChanged = false; 
+
+                Vector3 movement = targetSpline.transform.position - oldPositions[targetSpline];
+                oldPositions[targetSpline] = targetSpline.transform.position;
+                
+                targetSpline.segment.Move( movement );
+                targetSpline.UpdateMesh();
+            }
+
         }
 
         [DrawGizmo(GizmoType.InSelectionHierarchy | GizmoType.Active)]
@@ -149,7 +238,10 @@ namespace EasySplines.Editor {
             }
             if (segment is BezierQuadratic bezierQuadratic) {
                 // draw a Quadratic Bezier
-                Handles.DrawBezier( segment.controlPoint1.position, segment.controlPoint2.position, bezierQuadratic.handle, bezierQuadratic.handle, Color.white, EditorGUIUtility.whiteTexture, 1f );
+                const int steps = 15;
+                for (int i = 0; i < steps; i++)
+                    Gizmos.DrawLine( segment.GetPoint( (float)i/(float)steps ).position, segment.GetPoint( (float)(i+1)/(float)steps ).position );
+                    
                 Gizmos.DrawLine( segment.controlPoint1.position, bezierQuadratic.handle );
                 Gizmos.DrawLine( segment.controlPoint2.position, bezierQuadratic.handle );
             }
@@ -165,67 +257,6 @@ namespace EasySplines.Editor {
                 Gizmos.DrawLine(pointAlongTessel.position + (pointAlongTessel.rotation * scr.mesh2D.vertices[scr.mesh2D.vertices.Length-1].point)*scr.scale, pointAlongTessel.position + (pointAlongTessel.rotation * scr.mesh2D.vertices[0].point)*scr.scale);
                 
             }
-        }
-
-        public void OnSceneGUI(){
-
-            Spline targetSpline = (Spline)target;
-
-            ControlPoint controlPoint1 = targetSpline.segment.controlPoint1;
-            Vector3 tangent1 = targetSpline.GetTangent(0f);
-            if ( DrawControlPointGUI( ref controlPoint1, tangent1, 0.25f, Color.red, 201 ) ) {
-                Undo.RecordObject(targetSpline, "Edited Spline");
-                targetSpline.segment.controlPoint1.Set(controlPoint1);
-                targetSpline.UpdateOtherSegments();
-            }
-
-            ControlPoint controlPoint2 = targetSpline.segment.controlPoint2;
-            Vector3 tangent2 = targetSpline.GetTangent(1f);
-            if ( DrawControlPointGUI( ref controlPoint2, tangent2, 0.25f, Color.red, 202 ) ) {
-                Undo.RecordObject(targetSpline, "Edited Spline");
-                targetSpline.segment.controlPoint2.Set(controlPoint2);
-                targetSpline.UpdateOtherSegments();
-            }
-
-            if (targetSpline.segment is BezierCubic bezierCubic) {
-
-                Vector3 handle1 = bezierCubic.handle1;
-                if ( DrawHandleGUI( ref handle1, 0.2f, Color.blue, 203 ) ) {
-                    Undo.RecordObject(targetSpline, "Edited Cubic Spline");
-                    bezierCubic.handle1 = handle1;
-                    targetSpline.UpdateOtherSegments();
-                }
-
-                Vector3 handle2 = bezierCubic.handle2;
-                if ( DrawHandleGUI( ref handle2, 0.2f, Color.blue, 204 ) ) {
-                    Undo.RecordObject(targetSpline, "Edited Cubic Spline");
-                    bezierCubic.handle2 = handle2;
-                    targetSpline.UpdateOtherSegments();
-                }
-
-            }
-
-            if (targetSpline.segment is BezierQuadratic bezierQuadratic) {
-
-                Vector3 handle = bezierQuadratic.handle;
-                if ( DrawHandleGUI( ref handle, 0.2f, Color.blue, 205 ) ) {
-                    Undo.RecordObject(targetSpline, "Edited Quadratic Spline");
-                    bezierQuadratic.handle = handle;
-                    targetSpline.UpdateOtherSegments();
-                }
-
-            }
-
-            if ( targetSpline.transform.hasChanged ){
-                targetSpline.transform.hasChanged = false; 
-
-                Vector3 movement = targetSpline.transform.position - oldPosition;
-                oldPosition = targetSpline.transform.position;
-                
-                targetSpline.segment.Move( movement );
-                targetSpline.UpdateOtherSegments();
-            }
-
         }
 
         
@@ -284,13 +315,8 @@ namespace EasySplines.Editor {
 
 
 
-
-        
         
         private void OnEnable(){
-            Undo.undoRedoPerformed += OnUndoRedo;
-
-            targetSpline = (Spline)target;
 
             so = serializedObject;
             propSegmentType = so.FindProperty( "segmentType" );
@@ -309,11 +335,22 @@ namespace EasySplines.Editor {
             propCount = so.FindProperty( "ringCount" );
             propScale = so.FindProperty( "scale" );
 
-            oldPosition = targetSpline.transform.position;
+            targetSpline = (Spline)target;
+
+            // We have to do this for multi-object editing, otherwise the oldPosition will not be set on the non-first selected objects
+            foreach (var item in targets) {
+                if (item is Spline spline) {
+                    oldPositions[spline] = spline.transform.position;
+
+                    Undo.undoRedoPerformed -= OnUndoRedo;
+                    Undo.undoRedoPerformed += OnUndoRedo;
+                }
+            }
         }
 
         private void OnDisable(){
             Undo.undoRedoPerformed -= OnUndoRedo;
+            Debug.Log(targetSpline.name + " disabled");
         }
 
     }

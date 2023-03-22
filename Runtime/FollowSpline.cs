@@ -8,7 +8,7 @@ namespace EasySplines {
     
     public class FollowSpline : MonoBehaviour{
 
-        [SerializeField] private MovementDirection movementDirection;
+        public MovementDirection movementDirection;
 
         [SerializeField] private Spline spline;
         private OrientedPoint splinePosition;
@@ -41,7 +41,7 @@ namespace EasySplines {
             movementDirection = oldDirection;
         }
 
-        private void FixedUpdate(){
+        private void Update(){
             if (movementDirection == MovementDirection.None) {
                 return;
             }
@@ -104,7 +104,7 @@ namespace EasySplines {
 
 
 
-        private enum MovementDirection {
+        public enum MovementDirection {
             Backward = -1,
             None = 0,
             Forward = 1
