@@ -350,7 +350,6 @@ namespace EasySplines.Editor {
 
         private void OnDisable(){
             Undo.undoRedoPerformed -= OnUndoRedo;
-            Debug.Log(targetSpline.name + " disabled");
         }
 
     }
