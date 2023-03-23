@@ -41,7 +41,16 @@ namespace EasySplines {
             movementDirection = oldDirection;
         }
 
-        private void Update(){
+        private void MoveToPoint(float t) {
+            splinePosition = spline.GetPointUniform(t);
+
+            // transform.position = Vector3.Lerp(transform.position, splinePosition.position, 5f * GameUtility.timeDelta);
+            // transform.rotation = Quaternion.Slerp(transform.rotation, splinePosition.rotation, 5f * GameUtility.timeDelta);
+            transform.position = splinePosition.position;
+            transform.rotation = splinePosition.rotation;
+        }
+
+        private void Update() {
             if (movementDirection == MovementDirection.None) {
                 return;
             }
@@ -52,7 +61,7 @@ namespace EasySplines {
             bool stoppingPointForward = spline.hasStoppingPoint && ((spline.stoppingPoint < t && movementDirection == MovementDirection.Backward) || (spline.stoppingPoint > t && movementDirection == MovementDirection.Forward));
             bool endOfTheLine = goingForward ? spline.nextSpline == null : spline.previousSpline == null;
 
-            if ( stoppingPointForward || endOfTheLine ) {
+            if (stoppingPointForward || endOfTheLine) {
 
                 // When at the end of the line or at the stopping point, slow down
                 float stoppingPoint = stoppingPointForward ? spline.stoppingPoint : (goingForward ? 1f : 0f);
@@ -85,24 +94,22 @@ namespace EasySplines {
 
 
             // If the object has reached the end of the spline, go to the next one
-            while ( goingForward && t > 1f && spline.nextSpline != null) {
+            while (goingForward && t > 1f && spline.nextSpline != null) {
                 spline = spline.nextSpline;
                 t -= 1f;
-            }
-            while ( !goingForward && t < 0f && spline.previousSpline != null) {
+            } while (!goingForward && t < 0f && spline.previousSpline != null) {
                 spline = spline.previousSpline;
                 t += 1f;
             }
- 
-            
-            // Move
-            splinePosition = spline.GetPointUniform(t);
 
-            transform.position = Vector3.Lerp(transform.position, splinePosition.position, 5f * GameUtility.timeDelta);
-            transform.rotation = Quaternion.Slerp(transform.rotation, splinePosition.rotation, 5f * GameUtility.timeDelta);
+
+            // Move
+            MoveToPoint(t);
         }
 
-
+        private void Start() {
+            MoveToPoint(0);
+        }
 
         public enum MovementDirection {
             Backward = -1,
