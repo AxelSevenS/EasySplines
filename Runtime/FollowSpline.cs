@@ -6,6 +6,7 @@ using SevenGame.Utility;
 
 namespace EasySplines {
     
+    [DefaultExecutionOrder(-10)]
     public class FollowSpline : MonoBehaviour{
 
         public MovementDirection movementDirection;
@@ -15,7 +16,7 @@ namespace EasySplines {
         [SerializeField] private float maxSpeed;
         [SerializeField] private float moveSpeed = 0;
         [SerializeField] private float acceleration = 0.5f;
-        [Range(0, 1f)] [SerializeField] private float t;
+        [SerializeField] private float travelledDistance;
 
         [SerializeField] private float currentVelocity;
 
@@ -41,8 +42,8 @@ namespace EasySplines {
             movementDirection = oldDirection;
         }
 
-        private void MoveToPoint(float t) {
-            splinePosition = spline.GetPointUniform(t);
+        private void MoveToPoint(float distance) {
+            splinePosition = spline.GetPointWithDistance(distance);
 
             // transform.position = Vector3.Lerp(transform.position, splinePosition.position, 5f * GameUtility.timeDelta);
             // transform.rotation = Quaternion.Slerp(transform.rotation, splinePosition.rotation, 5f * GameUtility.timeDelta);
@@ -58,27 +59,28 @@ namespace EasySplines {
 
             float direction = (float)movementDirection;
 
-            bool stoppingPointForward = spline.hasStoppingPoint && ((spline.stoppingPoint < t && movementDirection == MovementDirection.Backward) || (spline.stoppingPoint > t && movementDirection == MovementDirection.Forward));
+            bool stoppingPointForward = spline.hasStoppingPoint && ((spline.stoppingPoint < spline.segment.GetTOfDistance(travelledDistance) && movementDirection == MovementDirection.Backward) || (spline.stoppingPoint > spline.segment.GetTOfDistance(travelledDistance) && movementDirection == MovementDirection.Forward));
             bool endOfTheLine = goingForward ? spline.nextSpline == null : spline.previousSpline == null;
 
             if (stoppingPointForward || endOfTheLine) {
 
                 // When at the end of the line or at the stopping point, slow down
-                float stoppingPoint = stoppingPointForward ? spline.stoppingPoint : (goingForward ? 1f : 0f);
+                float stoppingPoint = stoppingPointForward ? spline.segment.GetDistanceOfT(spline.stoppingPoint) : (goingForward ? spline.length : 0f);
 
                 // t = Mathf.SmoothStep(t, stoppingPoint, moveSpeed * GameUtility.timeDelta);
-                moveSpeed = Mathf.SmoothStep(moveSpeed, Mathf.Abs(t - stoppingPoint), moveSpeed * GameUtility.timeDelta);
+                float distanceToStoppingPoint = Mathf.Abs(travelledDistance - stoppingPoint);
+                float stoppingDistance = goingForward ? stoppingPoint - spline.length : spline.length - stoppingPoint;
+                float slowDownCoefficient = 1 - (stoppingDistance / distanceToStoppingPoint);
+                moveSpeed = Mathf.SmoothStep(moveSpeed, Mathf.Min(maxSpeed, distanceToStoppingPoint), slowDownCoefficient * 50f * GameUtility.timeDelta);
 
 
-                bool reachedStoppingPoint = Mathf.Abs(t - stoppingPoint) < 0.01f;
+                bool reachedStoppingPoint = Mathf.Abs(travelledDistance - stoppingPoint) < 0.01f;
 
                 if (reachedStoppingPoint) {
-                    t = stoppingPoint;
+                    travelledDistance = stoppingPoint;
                     if (stoppingPointForward) {
-                        // If at the stopping point, start moving again
                         StopAndContinue();
                     } else {
-                        // If at the end of the line, stop and turn around
                         StopAndTurnBack();
                     }
                 }
@@ -89,22 +91,21 @@ namespace EasySplines {
             }
 
             // Move along spline
-            float distanceToMove = (moveSpeed * direction) / 40f * GameUtility.timeDelta;
-            t += distanceToMove;
+            travelledDistance += (moveSpeed * direction) * GameUtility.timeDelta;
 
 
             // If the object has reached the end of the spline, go to the next one
-            while (goingForward && t > 1f && spline.nextSpline != null) {
+            while (goingForward && travelledDistance > spline.length && spline.nextSpline != null) {
+                travelledDistance -= spline.length;
                 spline = spline.nextSpline;
-                t -= 1f;
-            } while (!goingForward && t < 0f && spline.previousSpline != null) {
+            } while (!goingForward && travelledDistance < 0f && spline.previousSpline != null) {
+                travelledDistance += spline.length;
                 spline = spline.previousSpline;
-                t += 1f;
             }
 
 
             // Move
-            MoveToPoint(t);
+            MoveToPoint(travelledDistance);
         }
 
         private void Start() {

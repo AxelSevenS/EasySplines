@@ -49,6 +49,5 @@ namespace EasySplines {
 
             previousSegment.controlPoint2.Set( this.controlPoint1 );
         }
-
     }
 }

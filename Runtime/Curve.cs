@@ -34,7 +34,6 @@ namespace EasySplines {
         public Curve(Transform cp1, Transform cp2) : base(cp1, cp2) {}
 
 
-
         public override float GetUniformT(float t) {
             // Get the distance along the curve the T value represents
             float distance = t * length;

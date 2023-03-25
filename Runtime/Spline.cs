@@ -79,9 +79,13 @@ namespace EasySplines {
 
         public OrientedPoint GetPoint(float tVal) => segment.GetPoint(tVal);
         public OrientedPoint GetPointUniform(float tVal) => segment.GetPoint( segment.GetUniformT(tVal) );
+        public OrientedPoint GetPointWithDistance(float distance) => segment.GetPoint( segment.GetTOfDistance(distance) );
         public Vector3 GetTangent(float tVal) => segment.GetTangent(tVal);
 
-        public void UpdateMesh(){
+        public void UpdateMesh() {
+            
+            segment.UpdateLength();
+            
 
             if (mesh2D == null) {
                 meshFilter.sharedMesh = null;
@@ -149,8 +153,6 @@ namespace EasySplines {
 
             meshFilter.sharedMesh = mesh;
             meshCollider.sharedMesh = mesh;
-
-            segment.UpdateLength();
         }
 
         public void UpdateOtherSegments(){

@@ -45,6 +45,16 @@ namespace EasySplines {
 
         public abstract void Move(Vector3 direction);
 
+        public float GetTOfDistance(float distance) {
+            float distanceT = distance / length;
+            Debug.Log($"{distance} / {length}");
+            return GetUniformT(distanceT);
+        }
+
+        public float GetDistanceOfT(float t) {
+            return t * length;
+        }
+
         public abstract float GetUniformT(float t);
 
         public abstract OrientedPoint GetPoint(float t);
