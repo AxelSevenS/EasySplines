@@ -47,7 +47,6 @@ namespace EasySplines {
 
         public float GetTOfDistance(float distance) {
             float distanceT = distance / length;
-            Debug.Log($"{distance} / {length}");
             return GetUniformT(distanceT);
         }
 
