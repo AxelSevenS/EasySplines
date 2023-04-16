@@ -6,7 +6,7 @@ using SevenGame.Utility;
 
 namespace EasySplines {
     
-    [DefaultExecutionOrder(-10)]
+    [DefaultExecutionOrder(-20)]
     public class FollowSpline : MonoBehaviour{
 
         public MovementDirection movementDirection;
@@ -62,36 +62,36 @@ namespace EasySplines {
             bool stoppingPointForward = spline.hasStoppingPoint && ((spline.stoppingPoint < spline.segment.GetTOfDistance(travelledDistance) && movementDirection == MovementDirection.Backward) || (spline.stoppingPoint > spline.segment.GetTOfDistance(travelledDistance) && movementDirection == MovementDirection.Forward));
             bool endOfTheLine = goingForward ? spline.nextSpline == null : spline.previousSpline == null;
 
+            float stoppingPoint = stoppingPointForward ? spline.segment.GetDistanceOfT(spline.stoppingPoint) : (goingForward ? spline.length : 0f);
+            bool reachedStoppingPoint = stoppingPointForward ? (goingForward && travelledDistance >= stoppingPoint) || (!goingForward && travelledDistance <= stoppingPoint) : Mathf.Abs(travelledDistance - stoppingPoint) < 0.01f ;
+
+
             if (stoppingPointForward || endOfTheLine) {
 
-                // When at the end of the line or at the stopping point, slow down
-                float stoppingPoint = stoppingPointForward ? spline.segment.GetDistanceOfT(spline.stoppingPoint) : (goingForward ? spline.length : 0f);
-
-                // t = Mathf.SmoothStep(t, stoppingPoint, moveSpeed * GameUtility.timeDelta);
+                // When at the end of the line or at a stopping point, slow down
                 float distanceToStoppingPoint = Mathf.Abs(travelledDistance - stoppingPoint);
                 float stoppingDistance = goingForward ? stoppingPoint - spline.length : spline.length - stoppingPoint;
                 float slowDownCoefficient = 1 - (stoppingDistance / distanceToStoppingPoint);
                 moveSpeed = Mathf.SmoothStep(moveSpeed, Mathf.Min(maxSpeed, distanceToStoppingPoint), slowDownCoefficient * 50f * GameUtility.timeDelta);
-
-
-                bool reachedStoppingPoint = Mathf.Abs(travelledDistance - stoppingPoint) < 0.01f;
-
-                if (reachedStoppingPoint) {
-                    travelledDistance = stoppingPoint;
-                    if (stoppingPointForward) {
-                        StopAndContinue();
-                    } else {
-                        StopAndTurnBack();
-                    }
-                }
 
             } else {
                 // If not at the end of the line or at the stopping point, move at the set speed
                 moveSpeed = Mathf.SmoothStep(moveSpeed, maxSpeed, acceleration * GameUtility.timeDelta);
             }
 
-            // Move along spline
-            travelledDistance += (moveSpeed * direction) * GameUtility.timeDelta;
+            if (reachedStoppingPoint) {
+                travelledDistance = stoppingPoint;
+                if (stoppingPointForward) {
+                    StopAndContinue();
+                } else {
+                    StopAndTurnBack();
+                }
+            } else {
+
+                // Move along spline
+                travelledDistance += (moveSpeed * direction) * GameUtility.timeDelta;
+                
+            }
 
 
             // If the object has reached the end of the spline, go to the next one
@@ -99,8 +99,8 @@ namespace EasySplines {
                 travelledDistance -= spline.length;
                 spline = spline.nextSpline;
             } while (!goingForward && travelledDistance < 0f && spline.previousSpline != null) {
-                travelledDistance += spline.length;
                 spline = spline.previousSpline;
+                travelledDistance += spline.length;
             }
 
 
