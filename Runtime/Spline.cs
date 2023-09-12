@@ -3,8 +3,6 @@ using System.Collections.Generic;
 
 using UnityEngine;
 
-using SevenGame.Utility;
-
 namespace EasySplines {
     
     [RequireComponent(typeof(MeshFilter))]
@@ -202,7 +200,7 @@ namespace EasySplines {
         public void RemoveNext() {
             if (nextSpline.nextSpline != null)
                 nextSpline.nextSpline.previousSpline = null;
-            GameUtility.SafeDestroy(nextSpline.gameObject);
+            Destroy(nextSpline.gameObject);
             nextSpline = null;
         }
 
@@ -219,7 +217,7 @@ namespace EasySplines {
         public void RemovePrev(){
             if (previousSpline.previousSpline != null)
                 previousSpline.previousSpline.nextSpline = null;
-            GameUtility.SafeDestroy(previousSpline.gameObject);
+            Destroy(previousSpline.gameObject);
             previousSpline = null;
         }
 

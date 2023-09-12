@@ -262,7 +262,7 @@ namespace EasySplines.Editor {
             EditorGUI.BeginChangeCheck();
 
 
-            point.position = Handles.FreeMoveHandle(id, point.position, Quaternion.identity, moveHandleSize, Vector3.zero, Handles.SphereHandleCap);
+            point.position = Handles.FreeMoveHandle(id, point.position, moveHandleSize, Vector3.zero, Handles.SphereHandleCap);
 
             if (GUIUtility.hotControl == id || selectedSegment == id) {
                 point.position = Handles.PositionHandle(point.position, Quaternion.identity);
@@ -290,7 +290,7 @@ namespace EasySplines.Editor {
             EditorGUI.BeginChangeCheck();
 
 
-            point = Handles.FreeMoveHandle(id, point, Quaternion.identity, handleSize, Vector3.zero, Handles.SphereHandleCap);
+            point = Handles.FreeMoveHandle(id, point, handleSize, Vector3.zero, Handles.SphereHandleCap);
 
             if (GUIUtility.hotControl == id || selectedSegment == id) {
                 point = Handles.PositionHandle(point, Quaternion.identity);

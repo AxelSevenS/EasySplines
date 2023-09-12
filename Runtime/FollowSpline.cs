@@ -2,8 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-using SevenGame.Utility;
-
 namespace EasySplines {
     
     [DefaultExecutionOrder(-20)]
@@ -45,8 +43,8 @@ namespace EasySplines {
         private void MoveToPoint(float distance) {
             splinePosition = spline.GetPointWithDistance(distance);
 
-            // transform.position = Vector3.Lerp(transform.position, splinePosition.position, 5f * GameUtility.timeDelta);
-            // transform.rotation = Quaternion.Slerp(transform.rotation, splinePosition.rotation, 5f * GameUtility.timeDelta);
+            // transform.position = Vector3.Lerp(transform.position, splinePosition.position, 5f * Time.deltaTime);
+            // transform.rotation = Quaternion.Slerp(transform.rotation, splinePosition.rotation, 5f * Time.deltaTime);
             transform.position = splinePosition.position;
             transform.rotation = splinePosition.rotation;
         }
@@ -72,11 +70,11 @@ namespace EasySplines {
                 float distanceToStoppingPoint = Mathf.Abs(travelledDistance - stoppingPoint);
                 float stoppingDistance = goingForward ? stoppingPoint - spline.length : spline.length - stoppingPoint;
                 float slowDownCoefficient = 1 - (stoppingDistance / distanceToStoppingPoint);
-                moveSpeed = Mathf.SmoothStep(moveSpeed, Mathf.Min(maxSpeed, distanceToStoppingPoint), slowDownCoefficient * 50f * GameUtility.timeDelta);
+                moveSpeed = Mathf.SmoothStep(moveSpeed, Mathf.Min(maxSpeed, distanceToStoppingPoint), slowDownCoefficient * 50f * Time.deltaTime);
 
             } else {
                 // If not at the end of the line or at the stopping point, move at the set speed
-                moveSpeed = Mathf.SmoothStep(moveSpeed, maxSpeed, acceleration * GameUtility.timeDelta);
+                moveSpeed = Mathf.SmoothStep(moveSpeed, maxSpeed, acceleration * Time.deltaTime);
             }
 
             if (reachedStoppingPoint) {
@@ -89,7 +87,7 @@ namespace EasySplines {
             } else {
 
                 // Move along spline
-                travelledDistance += (moveSpeed * direction) * GameUtility.timeDelta;
+                travelledDistance += (moveSpeed * direction) * Time.deltaTime;
                 
             }
 
